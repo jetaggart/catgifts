@@ -8,9 +8,7 @@ let mainNetNode;
 
 console.log(window.web3);
 if (typeof window.web3 !== 'undefined') {
-  // Use Mist/MetaMask's provider
   userNode = new Web3(window.web3.currentProvider);
-  mainNetNode = new Web3(new Web3.providers.HttpProvider("https://mainnet.infura.io/TJMsqWwFVcEtMYSbsP60"));
 } else {
   console.error("failure");
 }
@@ -21,7 +19,7 @@ class App extends Component {
   constructor(props) {
     super(props);
 
-    this.state = {address: '0x7f1382e17d7969ee5ac6a5107506cb6dc13bf9d8', privateKey: ''};
+    this.state = {address: '', privateKey: ''};
   }
 
   transferKitty = (kitty) => {
@@ -36,10 +34,9 @@ class App extends Component {
     console.log("pk", privateKey);
     console.log("toAddress", toAddress);
 
-    mainNetNode.eth.getTransactionCount(account, function (err, nonce) {
+    userNode.eth.getTransactionCount(account, function (err, nonce) {
       console.log("building trnasaction");
-      debugger;
-      const data = mainNetNode.eth
+      const data = userNode.eth
         .contract(kittyAbi)
         .at(contractAddress)
         .transfer
@@ -48,7 +45,7 @@ class App extends Component {
       console.log("making transaction");
       const tx = new Tx({
         nonce: nonce,
-        gasPrice: mainNetNode.toHex(mainNetNode.toWei('5', 'gwei')),
+        gasPrice: userNode.toHex(userNode.toWei('5', 'gwei')),
         gasLimit: 100000,
         to: contractAddress,
         value: "0x00",
@@ -58,7 +55,7 @@ class App extends Component {
 
       console.log("sending transaction");
       const raw = '0x' + tx.serialize().toString('hex');
-      mainNetNode.eth.sendRawTransaction(raw, function () {
+      userNode.eth.sendRawTransaction(raw, function () {
         console.log(arguments);
       });
     });
@@ -74,7 +71,7 @@ class App extends Component {
           console.alert("no kitties, please make sure there's one kitty");
           return;
         }
-        const kitty = json.kitties[0];
+        const kitty = json.kitties.filter(k => k.auction.status !== 'open' )[0];
         this.transferKitty(kitty)
       })
       .catch((error) => {
