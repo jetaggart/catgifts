@@ -60,8 +60,8 @@ class App extends Component {
 
       console.log("sending transaction");
       const raw = '0x' + tx.serialize().toString('hex');
-      userNode.eth.sendRawTransaction(raw, function () {
-        that.setState({status: "transaction sent"});
+      userNode.eth.sendRawTransaction(raw, function (err, hash) {
+        that.setState({status: `transaction sent: [err = ${err}] + [hash = ${hash}]`});
       });
     });
 
