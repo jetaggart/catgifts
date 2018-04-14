@@ -2,6 +2,8 @@ import React, {Component} from 'react';
 import './App.css';
 import Web3 from 'web3';
 import Tx from 'ethereumjs-tx';
+import QRCode from 'qrcode-react';
+
 
 let userNode;
 
@@ -18,7 +20,13 @@ class App extends Component {
   constructor(props) {
     super(props);
 
-    this.state = {address: '', privateKey: ''};
+    this.state = {
+      qrCodeAddress: '',
+      qrCodePrivateKey: '',
+      address: '',
+      privateKey: '',
+      status: ''
+    };
   }
 
   transferKitty = (kitty) => {
@@ -28,11 +36,9 @@ class App extends Component {
     const privateKey = this.state.privateKey;
     const toAddress = userNode.eth.accounts[0];
 
-    console.log("kitty", kitty);
-    console.log("account", account);
-    console.log("pk", privateKey);
-    console.log("toAddress", toAddress);
+    this.setState({status: "sending cat to: " + toAddress});
 
+    const that = this;
     userNode.eth.getTransactionCount(account, function (err, nonce) {
       console.log("building trnasaction");
       const data = userNode.eth
@@ -41,7 +47,7 @@ class App extends Component {
         .transfer
         .getData(toAddress, kitty.id);
 
-      console.log("making transaction");
+      that.setState({status: "making transaction"});
       const tx = new Tx({
         nonce: nonce,
         gasPrice: userNode.toHex(userNode.toWei('5', 'gwei')),
@@ -55,14 +61,13 @@ class App extends Component {
       console.log("sending transaction");
       const raw = '0x' + tx.serialize().toString('hex');
       userNode.eth.sendRawTransaction(raw, function () {
-        console.log(arguments);
+        that.setState({status: "transaction sent"});
       });
     });
 
   };
 
   submit = () => {
-    console.error(this.state.address);
     fetch(`https://api.cryptokitties.co/kitties?owner_wallet_address=${this.state.address}`)
       .then((response) => response.json())
       .then((json) => {
@@ -79,19 +84,50 @@ class App extends Component {
   };
 
   handleAddress = (event) => {
-    this.setState({address: event.target.value});
+    this.setState({qrCodeAddress: event.target.value});
   };
 
   handlePrivateKey = (event) => {
-    this.setState({privateKey: event.target.value});
+    this.setState({qrCodePrivateKey: event.target.value});
+  };
+
+  scanQRCode = () => {
+    window.web3.currentProvider
+      .scanQRCode(new RegExp(".*"))
+      .then(data => {
+        this.setState({status: data});
+        const qrData = JSON.parse(data);
+        this.setState({address: qrData.address});
+        this.setState({privateKey: qrData.privateKey});
+      })
+      .catch(err => {
+        this.setState({address: "fucked up: " + err})
+      })
+  };
+
+  getQrCode = () => {
+    return `{"address": "${this.state.qrCodeAddress}", "privateKey": "${this.state.qrCodePrivateKey}"}`;
   };
 
   render() {
     return (
       <div className="App">
-        <input id='address' placeholder='address' onChange={this.handleAddress} value={this.state.value}/>
+        <div>
+          <input id='address' placeholder='address' onChange={this.handleAddress} value={this.state.qrCodeAddress}/>
+          <br/>
+          <input id='privateKey' placeholder='privateKey' onChange={this.handlePrivateKey} value={this.state.qrCodePrivateKey}/>
+          <br/>
+          <QRCode value={this.getQrCode()} />
+          <br/>
+          <div>{this.getQrCode()}</div>
+        </div>
         <br/>
-        <input id='privateKey' placeholder='privateKey' onChange={this.handlePrivateKey}/>
+        <br/>
+        <br/>
+        <button id='submit' onClick={this.scanQRCode}>Scan 1</button>
+        <div>{this.state.address}</div>
+        <div>{this.state.privateKey}</div>
+        <div>{this.state.status}</div>
         <br/>
         <button id='submit' onClick={this.submit}>Submit</button>
       </div>
