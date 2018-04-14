@@ -4,7 +4,6 @@ import Web3 from 'web3';
 import Tx from 'ethereumjs-tx';
 
 let userNode;
-let mainNetNode;
 
 console.log(window.web3);
 if (typeof window.web3 !== 'undefined') {
@@ -68,10 +67,10 @@ class App extends Component {
       .then((response) => response.json())
       .then((json) => {
         if (json.kitties.length < 1) {
-          console.alert("no kitties, please make sure there's one kitty");
+          alert("no kitties, please make sure there's one kitty");
           return;
         }
-        const kitty = json.kitties.filter(k => k.auction.status !== 'open' )[0];
+        const kitty = json.kitties[0];
         this.transferKitty(kitty)
       })
       .catch((error) => {
@@ -1139,6 +1138,6 @@ const kittyAbi = [
     "name": "ContractUpgrade",
     "type": "event"
   }
-]
+];
 
 export default App;
